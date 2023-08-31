@@ -1,0 +1,44 @@
+{% extends "layout.html" %} {% block body %}
+<div class="container">
+    <div class="messages-container">
+        <h3>Chat</h3>
+        <div class="search-bar">
+            <form class="search-form" method="post">
+                {% csrf_token %}
+                <input type="text" class="search-query" name="search_query" placeholder="Enter username" value="{{ search_query }}">
+                <button class="search-btn" type="submit">Search</button>
+            </form>
+
+            {% for user in users %}
+            <p>{{ user.username }}</p>
+            {% empty %}
+            <p>No users found.</p>
+            {% endfor %}
+        </div>
+        <div class="messages">
+            {% for contact in contacts %}
+            <p>{{ contact.username }}</p>
+            {% empty %}
+            <p>no messages</p>
+            {% endfor %}
+        </div>
+        <div class="profile">{{user.username}}</div>
+    </div>
+
+
+    <div class="chat-container">
+        <div class="chat-info">
+            <div class="username">username</div>
+            <div class="call">call</div>
+            <div class="info">info</div>
+        </div>
+        <div class="chat"></div>
+        <form class="message-form">
+            <input type="text" class="message" name="message" placeholder="Message...">
+            <button type="submit" class="send-btn">Send</button>
+        </form>
+    </div>
+
+
+</div>
+{% endblock %}

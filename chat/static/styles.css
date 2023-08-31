@@ -1,0 +1,142 @@
+:root {
+    --dark-gray: #121212;
+    --gray: #212121;
+    --light-gray: #333333;
+    --purple: #C3B1E1;
+    --dark-purple: #8a6cbb;
+}
+
+body {
+    background-color: var(--dark-gray);
+    color: white;
+}
+
+a,
+a:hover {
+    color: var(--purple);
+}
+
+.btn {
+    color: white;
+    border-color: var(--purple);
+}
+
+input[type='submit'] {
+    margin: 10px 0;
+    background-color: var(--dark-gray);
+}
+
+.btn:hover,
+.btn:active {
+    color: black !important;
+    background-color: var(--purple) !important;
+    border-color: var(--purple) !important;
+    box-shadow: 0 0 0 .1rem var(--dark-purple) !important;
+}
+
+.btn:focus {
+    box-shadow: 0 0 0 .1rem var(--dark-purple)!important;
+}
+
+.form-control,
+.form-control:focus {
+    background-color: var(--light-gray);
+    color: white;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 .2rem var(--dark-purple) !important;
+    border-color: white;
+}
+
+.form-control:disabled {
+    background-color: var(--gray);
+    opacity: .7;
+}
+
+input:-webkit-autofill {
+    -webkit-text-fill-color: white;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.login {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin-left: auto;
+    margin-right: auto;
+    width: 300px;
+    height: 80vh;
+}
+
+.login input[type='submit'] {
+    width: 100%;
+}
+
+.container {
+    background-color: var(--light-gray);
+    display: flex;
+    height: 100vh;
+    justify-content: center;
+    padding: 0;
+}
+
+.messages-container {
+    width: 35%;
+    display: flex;
+    flex-direction: column;
+}
+
+h3 {
+    margin: 10px auto 20px;
+}
+
+.search-form {
+    display: flex;
+}
+
+.search-query {
+    flex: 1;
+}
+
+.messages {
+    margin: auto 0;
+}
+
+.profile {
+    margin-top: auto;
+    margin-bottom: 5px;
+}
+
+.chat-container {
+    background-color: var(--gray);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-info {
+    display: flex;
+    align-items: center;
+    background-color: #8a6cbb;
+    height: 50px;
+    padding: 10px;
+}
+
+.call {
+    margin-left: auto;
+    margin-right: 5px;
+}
+
+.chat {
+    flex: 1;
+}
+
+.message-form {
+    margin-bottom: 5px;
+    display: flex;
+}
+
+.message {
+    flex: 1;
+}
