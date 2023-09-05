@@ -9,17 +9,19 @@
                 <button class="search-btn" type="submit">Search</button>
             </form>
 
-            {% for user in users %}
-            <p>{{ user.username }}</p>
-            {% empty %}
-            <p>No users found.</p>
-            {% endfor %}
+            <ul class="search-results">
+                {% for user in users %}
+                <li>
+                    <a href="#" class="search-result" data-username="{{ user.username }}">{{ user.username }}</a>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
         <div class="messages">
             {% for contact in contacts %}
-            <p>{{ contact.username }}</p>
+            <p class="contact" data-username="{{ contact.username }}">{{ contact.username }}</p>
             {% empty %}
-            <p>no messages</p>
+            <p>No messages</p>
             {% endfor %}
         </div>
         <div class="profile">{{user.username}}</div>
@@ -33,8 +35,10 @@
             <div class="info">info</div>
         </div>
         <div class="chat"></div>
-        <form class="message-form">
+        <form class="message-form" method="post" action="{% url 'send_message' %}">
+            {% csrf_token %}
             <input type="text" class="message" name="message" placeholder="Message...">
+            <input type="hidden" name="receiver" id="receiver" value="">
             <button type="submit" class="send-btn">Send</button>
         </form>
     </div>
