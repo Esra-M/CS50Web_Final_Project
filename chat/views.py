@@ -1,16 +1,26 @@
+from unittest import case
+from django.forms import IntegerField, model_to_dict
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.urls import reverse
 from django.db import IntegrityError
 from django.db.models import Q, Max, Subquery, OuterRef
-
-
-from .models import CustomUser, Message
+from django.contrib.auth.models import User
+from django.views.decorators.cache import cache_control
+from django.db.models import Max, F
+from django.db.models import Q
+from .models import Message
 
 def index(request):
     if request.user.is_authenticated:
         user = request.user
+
+        # Get the contacts based on messages
+        # Fetch users who have sent or received messages to/from the logged-in user
+        contact_users = User.objects.filter(
+            Q(sent_messages__receiver=user) | Q(received_messages__sender=user)
+        ).distinct()
 
         # Subquery to get the most recent timestamp for messages with each contact
         most_recent_messages = Message.objects.filter(
@@ -19,7 +29,7 @@ def index(request):
 
         # Get the contacts and order them by the most recent message timestamp
         contacts = (
-            user.contacts.all()
+            contact_users
             .annotate(last_message=Subquery(most_recent_messages.filter(receiver=OuterRef('pk')).values('last_message')))
             .order_by('-last_message')
         )
@@ -28,12 +38,62 @@ def index(request):
             search_query = request.POST["search_query"]
             users = []
             if search_query:
-                users = CustomUser.objects.filter(username__icontains=search_query)
+                users = User.objects.filter(username__icontains=search_query)
             return render(request, "index.html", {'search_query': search_query, 'users': users, 'contacts': contacts, 'user': user})
         else:
             return render(request, "index.html", {'contacts': contacts, 'user': user})
     else:
         return HttpResponseRedirect(reverse("login"))
+
+
+@cache_control(no_cache=True, must_revalidate=True, no_store=True)
+
+
+def fetch_contacts(request):
+    if request.method == 'GET':
+        current_user = request.user
+
+        # Get the latest message for each user (sender or receiver) involving the current user,
+        # ordered by timestamp in descending order
+        latest_messages = Message.objects.filter(
+            Q(sender=current_user) | Q(receiver=current_user)
+        ).values('sender', 'receiver').annotate(last_message=Max('timestamp')).order_by('-last_message')
+
+        # Remove duplicate messages where the sender of one message is the receiver of another and vice versa,
+        # keeping only the one with the newest date
+        unique_messages = {}
+        for message in latest_messages:
+            sender_id = message['sender']
+            receiver_id = message['receiver']
+            other_user_id = sender_id if receiver_id == current_user.id else receiver_id
+
+            if other_user_id not in unique_messages:
+                unique_messages[other_user_id] = message
+            else:
+                existing_message = unique_messages[other_user_id]
+                if message['last_message'] > existing_message['last_message']:
+                    unique_messages[other_user_id] = message
+
+        # Initialize lists to store contacts
+        contacts = []
+
+        # Determine whether the current user is the sender or receiver and compile the contact lists
+        for other_user_id, message in unique_messages.items():
+            other_user = User.objects.get(id=other_user_id)
+            contacts.append(other_user)
+
+        # Convert the QuerySet to a list of dictionaries
+        contacts_data = []
+        for contact, message in zip(contacts, unique_messages.values()):
+            contact_dict = {
+                'username': contact.username,
+                'last_message': message['last_message'].strftime('%Y-%m-%d %H:%M:%S') if message['last_message'] else None
+            }
+            contacts_data.append(contact_dict)
+
+        return JsonResponse({'contacts': contacts_data})
+
+    return JsonResponse({'error': 'Invalid request.'})
 
 def fetch_messages(request):
     if request.method == 'GET':
@@ -61,7 +121,7 @@ def send_message(request):
         message_content = request.POST.get("message")
 
         # Fetch the receiver user
-        receiver_user = CustomUser.objects.get(username=receiver_username)
+        receiver_user = User.objects.get(username=receiver_username)
 
         # Create and save the message with sender and receiver
         message = Message(sender=sender_user, receiver=receiver_user, content=message_content)
@@ -116,7 +176,9 @@ def register(request):
 
         # Attempt to create new user
         try:
-            user = CustomUser.objects.create_user(username, username, password)
+            # Replace 'desired_username' and 'desired_password' with the actual username and password you want to use.
+
+            user = User.objects.create_user(username, username, password)
             user.save()
         except IntegrityError as e:
             print(e)

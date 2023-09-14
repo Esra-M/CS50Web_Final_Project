@@ -17,13 +17,21 @@
                 {% endfor %}
             </ul>
         </div>
-        <div class="messages">
+        <div class="contacts">
             {% for contact in contacts %}
-            <p class="contact" data-username="{{ contact.username }}">{{ contact.username }}</p>
-            {% empty %}
-            <p>No messages</p>
+            <p class="contact" data-username="{{ contact.username }}">
+                {{ contact.username }}
+                <span class="last-message-timestamp">
+                        {% if contact.last_message %}
+                            : {{ contact.last_message }}
+                        {% else %}
+                            No Messages
+                        {% endif %}
+                    </span>
+            </p>
             {% endfor %}
         </div>
+
         <div class="profile">{{user.username}}</div>
     </div>
 

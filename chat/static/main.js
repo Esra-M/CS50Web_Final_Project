@@ -25,8 +25,65 @@ function loadAndDisplayMessages(username) {
     });
 }
 
+// Function to update contacts based on messages
+function updateContacts() {
+    $.ajax({
+        type: "GET",
+        url: "/fetch_contacts/",
+        cache: false,
+        success: function(data) {
+            console.log(data)
+                // Sort contacts based on the last_message timestamp
+            data.contacts.sort(function(a, b) {
+                return new Date(b.last_message) - new Date(a.last_message);
+            });
+
+            // Clear the existing contacts list
+            $(".contacts").empty();
+
+            // Append the fetched contacts to the list
+            $.each(data.contacts, function(index, contact) {
+                var contactElement = $("<p>")
+                    .addClass("contact")
+                    .attr("data-username", contact.username)
+                    .html(
+                        contact.username +
+                        '<span class="last-message-timestamp">' +
+                        (contact.last_message ? '       : ' + contact.last_message : 'No Messages') +
+                        '</span>'
+                    );
+                $(".contacts").append(contactElement);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error("Error fetching contacts:", error);
+        }
+    });
+}
+
+
+
+// Function to poll for new messages and update contacts
+function pollForMessagesAndContacts() {
+    var currentContactUsername = $('.username').text();
+
+    // Fetch and update contacts every second
+    updateContacts();
+
+    // Fetch messages
+    if (currentContactUsername) {
+        loadAndDisplayMessages(currentContactUsername);
+    }
+
+    // Poll again after one second (adjust the interval as needed)
+    setTimeout(pollForMessagesAndContacts, 2000);
+}
+
+// Initial call to start polling
+pollForMessagesAndContacts();
+
 // Add a click event listener to your contact elements
-$('.contact').click(function() {
+$('body').on('click', '.contact', function() {
     // Get the username from the data-username attribute of the clicked contact
     var receiverUsername = $(this).data('username');
     // Set the value of the hidden input field to the receiver's username
@@ -54,17 +111,6 @@ function appendNewMessage(message) {
     chatContainer.scrollTop(chatContainer[0].scrollHeight);
 }
 
-// Periodically poll for new messages
-function pollForMessages() {
-    var currentContactUsername = $('.username').text();
-    if (currentContactUsername) {
-        loadAndDisplayMessages(currentContactUsername);
-    }
-}
-
-// Poll for new messages every 5 seconds (adjust the interval as needed)
-setInterval(pollForMessages, 1000);
-
 
 // Add a submit event listener to the message-form
 $('.message-form').submit(function(e) {
@@ -86,7 +132,6 @@ $('.message-form').submit(function(e) {
                 // Clear the message input field
                 $('.message').val('');
 
-                update_contacts();
             } else {
                 // Message sending failed, display an error message
                 console.error('Error: ' + response.error);
@@ -98,40 +143,6 @@ $('.message-form').submit(function(e) {
         }
     });
 });
-
-function update_contacts() {
-    // Check if the contact exists, and add it if it doesn't
-    var receiverUsername = $('#receiver').val();
-    if (receiverUsername) {
-        var existingContact = $('.contact[data-username="' + receiverUsername + '"]');
-        if (existingContact.length === 0) {
-            // Create a new contact element
-            var newContact = $('<p class="contact" data-username="' + receiverUsername + '">' + receiverUsername + '</p>');
-
-            // Add a click event listener to the new contact (for loading messages)
-            newContact.click(function() {
-                // Get the username from the data-username attribute of the clicked contact
-                var receiverUsername = $(this).data('username');
-                // Set the value of the hidden input field to the receiver's username
-                $('#receiver').val(receiverUsername);
-                // Update the username displayed in the chat-info div (optional)
-                $('.username').text(receiverUsername);
-
-                // Load and display messages when a contact is clicked
-                loadAndDisplayMessages(receiverUsername);
-            });
-
-            // Prepend the new contact to the list of contacts (to move it to the top)
-            $('.messages').prepend(newContact);
-        } else {
-            // Move the existing contact to the top (if it's not already there)
-            if (!existingContact.is(':first-child')) {
-                existingContact.prependTo('.messages');
-            }
-        }
-    }
-
-}
 
 // Add a click event listener to your search results
 $('.search-result').click(function(e) {
