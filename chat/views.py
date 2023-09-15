@@ -1,15 +1,12 @@
-from unittest import case
-from django.forms import IntegerField, model_to_dict
-from django.shortcuts import get_object_or_404, render
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import render
+from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.urls import reverse
 from django.db import IntegrityError
 from django.db.models import Q, Max, Subquery, OuterRef
 from django.contrib.auth.models import User
 from django.views.decorators.cache import cache_control
-from django.db.models import Max, F
-from django.db.models import Q
+
 from .models import Message
 
 def index(request):
@@ -47,8 +44,6 @@ def index(request):
 
 
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
-
-
 def fetch_contacts(request):
     if request.method == 'GET':
         current_user = request.user
@@ -80,20 +75,43 @@ def fetch_contacts(request):
         # Determine whether the current user is the sender or receiver and compile the contact lists
         for other_user_id, message in unique_messages.items():
             other_user = User.objects.get(id=other_user_id)
-            contacts.append(other_user)
+
+            # Check for unread messages from this contact
+            has_unread_messages = Message.objects.filter(
+                sender=other_user, receiver=current_user, read=False
+            ).exists()
+
+            contact_dict = {
+                'username': other_user.username,
+                'last_message': message['last_message'].strftime('%Y-%m-%d %H:%M:%S') if message['last_message'] else None,
+                'has_unread_messages': has_unread_messages,  # Add a flag for unread messages
+            }
+            contacts.append(contact_dict)
 
         # Convert the QuerySet to a list of dictionaries
         contacts_data = []
-        for contact, message in zip(contacts, unique_messages.values()):
-            contact_dict = {
-                'username': contact.username,
-                'last_message': message['last_message'].strftime('%Y-%m-%d %H:%M:%S') if message['last_message'] else None
-            }
-            contacts_data.append(contact_dict)
+        for contact in contacts:
+            contacts_data.append(contact)
 
         return JsonResponse({'contacts': contacts_data})
 
     return JsonResponse({'error': 'Invalid request.'})
+    
+def mark_messages_as_read(request, contact_username):
+    if request.method == 'POST':
+        # Use the contact_username parameter instead of POST data
+        # Mark messages as read for the clicked contact
+        current_user = request.user
+        messages_to_mark_as_read = Message.objects.filter(
+            sender__username=contact_username,  # Use the contact_username parameter
+            receiver=current_user,
+            read=False
+        )
+        messages_to_mark_as_read.update(read=True)
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'error': 'Invalid request method.'})
 
 def fetch_messages(request):
     if request.method == 'GET':

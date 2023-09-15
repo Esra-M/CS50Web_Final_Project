@@ -9,4 +9,5 @@ urlpatterns = [
     path('fetch_messages/', views.fetch_messages, name='fetch_messages'),
     path('fetch_contacts/', views.fetch_contacts, name='fetch_contacts'),
     path('send_message/', views.send_message, name='send_message'),
+    path('mark_messages_as_read/<str:contact_username>/', views.mark_messages_as_read, name='mark_messages_as_read'),
 ]

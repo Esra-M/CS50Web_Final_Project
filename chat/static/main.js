@@ -25,6 +25,9 @@ function loadAndDisplayMessages(username) {
     });
 }
 
+// Define a variable to store the currently open chat username
+var currentlyOpenChat = null;
+
 // Function to update contacts based on messages
 function updateContacts() {
     $.ajax({
@@ -32,25 +35,23 @@ function updateContacts() {
         url: "/fetch_contacts/",
         cache: false,
         success: function(data) {
-            console.log(data)
-                // Sort contacts based on the last_message timestamp
+
+            // Sort contacts based on the last_message timestamp
             data.contacts.sort(function(a, b) {
                 return new Date(b.last_message) - new Date(a.last_message);
             });
 
             // Clear the existing contacts list
             $(".contacts").empty();
-
             // Append the fetched contacts to the list
             $.each(data.contacts, function(index, contact) {
+
                 var contactElement = $("<p>")
                     .addClass("contact")
                     .attr("data-username", contact.username)
                     .html(
                         contact.username +
-                        '<span class="last-message-timestamp">' +
-                        (contact.last_message ? '       : ' + contact.last_message : 'No Messages') +
-                        '</span>'
+                        (contact.has_unread_messages && contact.username != currentlyOpenChat ? '<span class="new-message-text">  New Message</span>' : '')
                     );
                 $(".contacts").append(contactElement);
             });
@@ -76,7 +77,7 @@ function pollForMessagesAndContacts() {
     }
 
     // Poll again after one second (adjust the interval as needed)
-    setTimeout(pollForMessagesAndContacts, 2000);
+    setTimeout(pollForMessagesAndContacts, 1000);
 }
 
 // Initial call to start polling
@@ -91,9 +92,47 @@ $('body').on('click', '.contact', function() {
     // Update the username displayed in the chat-info div (optional)
     $('.username').text(receiverUsername);
 
+    // Mark messages as read when a contact is clicked (via AJAX)
+    markMessagesAsRead(receiverUsername);
+
+    // Store the currently open chat username
+    currentlyOpenChat = receiverUsername;
+
+
     // Load and display messages when a contact is clicked
     loadAndDisplayMessages(receiverUsername);
 });
+
+// Get the CSRF token from a cookie
+var csrftoken = getCookie('csrftoken');
+
+// Function to get the CSRF token from the cookie
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Function to mark messages as read via AJAX
+function markMessagesAsRead(receiverUsername) {
+    $.ajax({
+        url: `/mark_messages_as_read/${receiverUsername}/`, // Correct URL with the username parameter
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken // Include the CSRF token in the headers
+        },
+    });
+}
+
 
 // Load and display messages for the initial selected contact (if any)
 var initialContactUsername = $('.contact.selected').data('username');

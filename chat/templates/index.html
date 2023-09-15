@@ -22,15 +22,17 @@
             <p class="contact" data-username="{{ contact.username }}">
                 {{ contact.username }}
                 <span class="last-message-timestamp">
-                        {% if contact.last_message %}
-                            : {{ contact.last_message }}
-                        {% else %}
-                            No Messages
-                        {% endif %}
-                    </span>
+                    {% if contact.last_message %}
+                        : {{ contact.last_message }}
+                    {% else %}
+                        No Messages
+                    {% endif %}
+                </span>
+                <span class="new-message-indicator" style="display: none;">New Message</span>
             </p>
             {% endfor %}
         </div>
+
 
         <div class="profile">{{user.username}}</div>
     </div>
