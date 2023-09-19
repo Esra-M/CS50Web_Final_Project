@@ -126,7 +126,7 @@ def fetch_messages(request):
             ).order_by('timestamp')
 
             # Serialize messages
-            messages_data = [{'content': message.content, 'timestamp': message.timestamp} for message in messages]
+            messages_data = [{'content': message.content, 'timestamp': message.timestamp, 'sender': message.sender.username, 'read': message.read} for message in messages]
 
             return JsonResponse({'messages': messages_data})
 

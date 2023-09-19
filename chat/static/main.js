@@ -11,19 +11,58 @@ function loadAndDisplayMessages(username) {
             // Sort the messages by timestamp
             data.messages.sort(function(a, b) {
                 return new Date(a.timestamp) - new Date(b.timestamp);
-            });
+            });;
 
             // Append the sorted messages to the chat container
             $.each(data.messages, function(index, message) {
+                var messageWrapper = $("<div>").addClass("message-wrapper");
                 var messageContent = $("<p>").text(message.content);
-                $(".chat").append(messageContent);
+                var messageStatus = $("<div>").addClass("message-status");
+
+                // Add a CSS class to right-align messages sent by the logged-in user
+                if (message.sender !== username) {
+                    messageContent.addClass("sent-message");
+                    // Add message status icon based on the 'read' flag
+                    if (message.read) {
+                        messageStatus.html('<i class="fas fa-check-double"></i>'); // Two ticks for seen
+                    } else {
+                        messageStatus.html('<i class="fas fa-check"></i>'); // One tick for sent
+                    }
+                }
+
+                messageWrapper.append(messageContent);
+                messageWrapper.append(messageStatus);
+
+                $(".chat").append(messageWrapper);
             });
+
         },
         error: function(xhr, status, error) {
             console.error(xhr.responseText);
         }
     });
 }
+
+
+// Add a click event listener to your contact elements
+$('body').on('click', '.contact', function() {
+    // Get the username from the data-username attribute of the clicked contact
+    var receiverUsername = $(this).data('username');
+    // Set the value of the hidden input field to the receiver's username
+    $('#receiver').val(receiverUsername);
+    // Update the username displayed in the chat-info div (optional)
+    $('.username').text(receiverUsername);
+
+    // Mark messages as read when a contact is clicked (via AJAX)
+    markMessagesAsRead(receiverUsername);
+
+    // Store the currently open chat username
+    currentlyOpenChat = receiverUsername;
+
+
+    // Load and display messages when a contact is clicked
+    loadAndDisplayMessages(receiverUsername);
+});
 
 // Define a variable to store the currently open chat username
 var currentlyOpenChat = null;
@@ -54,6 +93,12 @@ function updateContacts() {
                         (contact.has_unread_messages && contact.username != currentlyOpenChat ? '<span class="new-message-text">  New Message</span>' : '')
                     );
                 $(".contacts").append(contactElement);
+
+                // Check if the chat is currently open and mark messages as read
+                if (contact.username === currentlyOpenChat) {
+                    // Call a function to mark messages as read for this contact
+                    markMessagesAsRead(contact.username);
+                }
             });
         },
         error: function(xhr, status, error) {
@@ -61,8 +106,6 @@ function updateContacts() {
         }
     });
 }
-
-
 
 // Function to poll for new messages and update contacts
 function pollForMessagesAndContacts() {
@@ -82,26 +125,6 @@ function pollForMessagesAndContacts() {
 
 // Initial call to start polling
 pollForMessagesAndContacts();
-
-// Add a click event listener to your contact elements
-$('body').on('click', '.contact', function() {
-    // Get the username from the data-username attribute of the clicked contact
-    var receiverUsername = $(this).data('username');
-    // Set the value of the hidden input field to the receiver's username
-    $('#receiver').val(receiverUsername);
-    // Update the username displayed in the chat-info div (optional)
-    $('.username').text(receiverUsername);
-
-    // Mark messages as read when a contact is clicked (via AJAX)
-    markMessagesAsRead(receiverUsername);
-
-    // Store the currently open chat username
-    currentlyOpenChat = receiverUsername;
-
-
-    // Load and display messages when a contact is clicked
-    loadAndDisplayMessages(receiverUsername);
-});
 
 // Get the CSRF token from a cookie
 var csrftoken = getCookie('csrftoken');
@@ -140,28 +163,43 @@ if (initialContactUsername) {
     loadAndDisplayMessages(initialContactUsername);
 }
 
-// Function to append a new message to the chat container
+/// Function to append a new message to the chat container
 function appendNewMessage(message) {
-    var messageContent = $("<p>").text(message.content);
-    $(".chat").append(messageContent);
+    var messageWrapper = $("<div>").addClass("message-wrapper");
+    var messageContent = $("<p>").text(message.content).addClass("sent-message");
+
+    // Add message status icon based on the 'read' flag
+    var messageStatus = $("<div>").addClass("message-status");
+    if (message.read) {
+        messageStatus.html('<i class="fas fa-check-double"></i>'); // Two ticks for seen
+    } else {
+        messageStatus.html('<i class="fas fa-check"></i>'); // One tick for sent
+    }
+
+    messageWrapper.append(messageContent);
+    messageWrapper.append(messageStatus);
+
+    $(".chat").append(messageWrapper);
 
     // Scroll to the bottom of the chat container to show the new message
     var chatContainer = $(".chat");
     chatContainer.scrollTop(chatContainer[0].scrollHeight);
 }
 
-
 // Add a submit event listener to the message-form
 $('.message-form').submit(function(e) {
     // Prevent the default form submission
     e.preventDefault();
+
     // Get the form data
     var formData = $(this).serialize();
+
     // Send an AJAX POST request to the send_message view
     $.ajax({
         type: "POST",
         url: "/send_message/",
         data: formData,
+        dataType: 'json', // Set the expected response data type to JSON
         success: function(response) {
             // Handle the response (e.g., display success or error messages)
             if (response.success) {
@@ -170,15 +208,14 @@ $('.message-form').submit(function(e) {
                 appendNewMessage(response.message);
                 // Clear the message input field
                 $('.message').val('');
-
             } else {
                 // Message sending failed, display an error message
                 console.error('Error: ' + response.error);
             }
         },
-        error: function() {
+        error: function(xhr, status, error) {
             // Handle AJAX error, display a generic error message
-            console.error('An error occurred while sending the message.');
+            console.error('An error occurred while sending the message:', error);
         }
     });
 });
