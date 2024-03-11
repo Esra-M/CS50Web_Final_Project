@@ -1,7 +1,9 @@
 :root {
+    --black: black;
     --dark-gray: #121212;
-    --gray: #212121;
-    --light-gray: #333333;
+    --gray: #282828;
+    --light-gray: #383838;
+    --whitish: #a1a1a1;
     --purple: #C3B1E1;
     --dark-purple: #8a6cbb;
 }
@@ -28,14 +30,14 @@ input[type='submit'] {
 
 .btn:hover,
 .btn:active {
-    color: black !important;
-    background-color: var(--purple) !important;
-    border-color: var(--purple) !important;
-    box-shadow: 0 0 0 .1rem var(--dark-purple) !important;
+    color: black;
+    background-color: var(--purple);
+    border-color: var(--purple);
+    box-shadow: 0 0 0 .1rem var(--dark-purple);
 }
 
 .btn:focus {
-    box-shadow: 0 0 0 .1rem var(--dark-purple)!important;
+    box-shadow: 0 0 0 .1rem var(--dark-purple);
 }
 
 .form-control,
@@ -45,7 +47,7 @@ input[type='submit'] {
 }
 
 .form-control:focus {
-    box-shadow: 0 0 0 .2rem var(--dark-purple) !important;
+    box-shadow: 0 0 0 .2rem var(--dark-purple);
     border-color: white;
 }
 
@@ -74,17 +76,19 @@ input:-webkit-autofill {
 }
 
 .container {
-    background-color: var(--light-gray);
-    display: flex;
     height: 100vh;
+    display: flex;
     justify-content: center;
     padding: 0;
+    max-width: 1200px;
 }
 
 .messages-container {
     width: 35%;
     display: flex;
     flex-direction: column;
+    background-color: var(--dark-gray);
+    border-right: 1px solid var(--light-gray);
 }
 
 h3 {
@@ -93,14 +97,84 @@ h3 {
 
 .search-form {
     display: flex;
+    width: 90%;
+    margin: auto;
+    margin-bottom: 30px;
 }
 
 .search-query {
     flex: 1;
+    background-color: var(--gray);
+    border: none;
+    border-radius: 10px;
 }
 
-.messages {
-    margin: auto 0;
+.search-query::placeholder {
+    color: var(--whitish);
+}
+
+.search-query:focus {
+    box-shadow: none;
+    background-color: var(--light-gray);
+}
+
+.search-query:focus+.input-group-append .search-icon {
+    background-color: var(--light-gray);
+}
+
+.search-icon {
+    border: none;
+    border-radius: 10px;
+    color: var(--whitish);
+    background-color: var(--gray);
+}
+
+input[type=search]::-webkit-search-cancel-button:hover {
+    cursor: pointer;
+}
+
+input[type=search]::-webkit-search-cancel-button {
+    position: relative;
+    left: 10px;
+    filter: invert(50%) sepia(100%) saturate(0%);
+}
+
+.search-results {
+    display: none;
+}
+
+.contact {
+    background-color: var(--dark-gray);
+    padding: 10px;
+}
+
+.contact:hover {
+    cursor: pointer;
+    background-color: var(--gray);
+}
+
+.profile-pic {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--purple);
+    color: white;
+    text-align: center;
+    line-height: 40px;
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.contact-name {
+    display: inline-block;
+    vertical-align: middle;
+    color: white;
+    font-size: 16px;
+}
+
+.contact.selected {
+    background-color: var(--gray);
 }
 
 .profile {
@@ -109,7 +183,7 @@ h3 {
 }
 
 .chat-container {
-    background-color: var(--gray);
+    background-color: var(--dark-gray);
     flex: 1;
     display: flex;
     flex-direction: column;

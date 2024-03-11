@@ -5,33 +5,23 @@
         <div class="search-bar">
             <form class="search-form" method="post">
                 {% csrf_token %}
-                <input type="text" class="search-query" name="search_query" placeholder="Enter username" value="{{ search_query }}">
-                <button class="search-btn" type="submit">Search</button>
+
+                <div class="input-group">
+                    <input type="search" class="search-query form-control" name="search_query" autocomplete="off" placeholder="Search" value="{{ search_query }}">
+                    <div class="input-group-append">
+                        <div class="input-group-text search-icon"><i class="fa fa-search"></i></div>
+                    </div>
+                </div>
             </form>
 
-            <ul class="search-results">
-                {% for user in users %}
-                <li>
-                    <a href="#" class="search-result" data-username="{{ user.username }}">{{ user.username }}</a>
-                </li>
-                {% endfor %}
-            </ul>
+            <div class="search-results">
+
+            </div>
         </div>
         <div class="contacts">
-            {% for contact in contacts %}
-            <p class="contact" data-username="{{ contact.username }}">
-                {{ contact.username }}
-                <span class="last-message-timestamp">
-                    {% if contact.last_message %}
-                        : {{ contact.last_message }}
-                    {% else %}
-                        No Messages
-                    {% endif %}
-                </span>
-                <span class="new-message-indicator" style="display: none;">New Message</span>
-            </p>
-            {% endfor %}
+
         </div>
+
 
 
         <div class="profile">{{user.username}}</div>
@@ -40,7 +30,7 @@
 
     <div class="chat-container">
         <div class="chat-info">
-            <div class="username">username</div>
+            <div class="CurrentUsername">username</div>
             <div class="call">call</div>
             <div class="info">info</div>
         </div>

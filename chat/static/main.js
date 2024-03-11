@@ -1,3 +1,5 @@
+var currentContactUsername = null;
+
 function loadAndDisplayMessages(username) {
     // Make an AJAX request to fetch messages between the logged-in user and the contact
     $.ajax({
@@ -43,29 +45,29 @@ function loadAndDisplayMessages(username) {
     });
 }
 
-
 // Add a click event listener to your contact elements
-$('body').on('click', '.contact', function() {
+$('body').on('click', '.contact', function(event) {
+    event.preventDefault(); // Prevent the default action
+
+    // Remove the 'selected' class from all contacts
+    $('.contact').removeClass('selected');
+
+    // Add the 'selected' class to the clicked contact
+    $(this).addClass('selected');
+
     // Get the username from the data-username attribute of the clicked contact
-    var receiverUsername = $(this).data('username');
+    currentContactUsername = $(this).data('username');
     // Set the value of the hidden input field to the receiver's username
-    $('#receiver').val(receiverUsername);
+    $('#receiver').val(currentContactUsername);
     // Update the username displayed in the chat-info div (optional)
-    $('.username').text(receiverUsername);
+    $('.CurrentUsername').text(currentContactUsername);
 
     // Mark messages as read when a contact is clicked (via AJAX)
-    markMessagesAsRead(receiverUsername);
-
-    // Store the currently open chat username
-    currentlyOpenChat = receiverUsername;
-
+    markMessagesAsRead(currentContactUsername);
 
     // Load and display messages when a contact is clicked
-    loadAndDisplayMessages(receiverUsername);
+    loadAndDisplayMessages(currentContactUsername);
 });
-
-// Define a variable to store the currently open chat username
-var currentlyOpenChat = null;
 
 // Function to update contacts based on messages
 function updateContacts() {
@@ -85,19 +87,33 @@ function updateContacts() {
             // Append the fetched contacts to the list
             $.each(data.contacts, function(index, contact) {
 
-                var contactElement = $("<p>")
+                var profilePic = $("<span>")
+                    .addClass("profile-pic")
+                    .text(contact.username.charAt(0).toUpperCase()); // Display the first letter of the username
+
+                var contactName = $("<span>")
+                    .addClass("contact-name")
+                    .text(contact.username); // Display the username
+
+                var contactElement = $("<div>")
                     .addClass("contact")
                     .attr("data-username", contact.username)
-                    .html(
-                        contact.username +
-                        (contact.has_unread_messages && contact.username != currentlyOpenChat ? '<span class="new-message-text">  New Message</span>' : '')
-                    );
+                    .append(profilePic) // Append the profile picture
+                    .append(contactName); // Append the contact name
+
+                // Add the 'selected' class to the currently selected contact
+                if (contact.username === currentContactUsername) {
+                    contactElement.addClass('selected');
+                }
+
                 $(".contacts").append(contactElement);
 
+
                 // Check if the chat is currently open and mark messages as read
-                if (contact.username === currentlyOpenChat) {
+                if (contact.username === currentContactUsername) {
                     // Call a function to mark messages as read for this contact
                     markMessagesAsRead(contact.username);
+
                 }
             });
         },
@@ -107,9 +123,9 @@ function updateContacts() {
     });
 }
 
+
 // Function to poll for new messages and update contacts
 function pollForMessagesAndContacts() {
-    var currentContactUsername = $('.username').text();
 
     // Fetch and update contacts every second
     updateContacts();
@@ -146,21 +162,14 @@ function getCookie(name) {
 }
 
 // Function to mark messages as read via AJAX
-function markMessagesAsRead(receiverUsername) {
+function markMessagesAsRead(currentContactUsername) {
     $.ajax({
-        url: `/mark_messages_as_read/${receiverUsername}/`, // Correct URL with the username parameter
+        url: `/mark_messages_as_read/${currentContactUsername}/`, // Correct URL with the username parameter
         method: 'POST',
         headers: {
             'X-CSRFToken': csrftoken // Include the CSRF token in the headers
         },
     });
-}
-
-
-// Load and display messages for the initial selected contact (if any)
-var initialContactUsername = $('.contact.selected').data('username');
-if (initialContactUsername) {
-    loadAndDisplayMessages(initialContactUsername);
 }
 
 /// Function to append a new message to the chat container
@@ -220,17 +229,62 @@ $('.message-form').submit(function(e) {
     });
 });
 
-// Add a click event listener to your search results
-$('.search-result').click(function(e) {
+// Trigger the search when input changes
+$('.search-form').on('input', function() {
+
+
+    if ($(this).find('.search-query').val().trim() === '') {
+        // Show contacts and hide search results
+        $(".contacts").show();
+        $(".search-results").hide();
+    } else {
+        // Hide contacts and show search results
+        $(".contacts").hide();
+        $(".search-results").show();
+        $(this).submit();
+    }
+});
+
+// Handle form submission
+$('.search-form').submit(function(e) {
     e.preventDefault();
 
-    // Get the username from the data-username attribute of the clicked search result
-    var receiverUsername = $(this).data('username');
+    var formData = $(this).serialize();
+    $.ajax({
+        type: "POST",
+        url: "/search_users/",
+        data: formData,
+        dataType: 'json',
+        success: function(response) {
+            if (response.users.length > 0) {
+                $(".search-results").empty();
 
-    // Update the receiver input value and chat username display
-    $('#receiver').val(receiverUsername);
-    $('.username').text(receiverUsername);
+                // Iterate over the search results and append them to the search-results list
+                response.users.forEach(function(user) {
+                    var profilePic = $("<span>")
+                        .addClass("profile-pic")
+                        .text(user.username.charAt(0).toUpperCase()); // Display the first letter of the username
 
-    // Load and display messages when a search result is clicked
-    loadAndDisplayMessages(receiverUsername);
+                    var username = $("<span>")
+                        .addClass("username")
+                        .text(user.username); // Display the username
+
+
+                    var searchResult = $("<div>")
+                        .addClass("search-result contact")
+                        .attr("data-username", user.username)
+                        .append(profilePic) // Append the profile picture
+                        .append(username); // Append the username
+
+                    $(".search-results").append(searchResult);
+                });
+            } else {
+                // If no users found, display a message
+                $(".search-results").html("<li>No results found</li>");
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('An error occurred while searching for a user:', error);
+        }
+    });
 });

@@ -31,18 +31,24 @@ def index(request):
             .order_by('-last_message')
         )
 
-        if request.method == "POST":
-            search_query = request.POST["search_query"]
-            users = []
-            if search_query:
-                users = User.objects.filter(username__icontains=search_query)
-            return render(request, "index.html", {'search_query': search_query, 'users': users, 'contacts': contacts, 'user': user})
-        else:
-            return render(request, "index.html", {'contacts': contacts, 'user': user})
+       
+        return render(request, "index.html", {'contacts': contacts, 'user': user})
     else:
         return HttpResponseRedirect(reverse("login"))
 
+def search_users(request):
+    if request.method == "POST":
+        user = request.user
+        search_query = request.POST.get("search_query")
+        users = []
 
+        if search_query:
+            users = list(User.objects.filter(username__icontains=search_query).values('username'))
+
+        return JsonResponse({"search_query": search_query, "users": users})
+    else:
+        return JsonResponse({"error": "Invalid request method."})
+    
 @cache_control(no_cache=True, must_revalidate=True, no_store=True)
 def fetch_contacts(request):
     if request.method == 'GET':
@@ -115,7 +121,7 @@ def mark_messages_as_read(request, contact_username):
 
 def fetch_messages(request):
     if request.method == 'GET':
-        username = request.GET.get('username', None)
+        username = request.GET.get('username')
         if username:
             # Get the logged-in user
             logged_in_user = request.user
@@ -124,6 +130,7 @@ def fetch_messages(request):
             messages = Message.objects.filter(
                 (Q(sender=logged_in_user, receiver__username=username) | Q(sender__username=username, receiver=logged_in_user))
             ).order_by('timestamp')
+
 
             # Serialize messages
             messages_data = [{'content': message.content, 'timestamp': message.timestamp, 'sender': message.sender.username, 'read': message.read} for message in messages]
@@ -194,8 +201,6 @@ def register(request):
 
         # Attempt to create new user
         try:
-            # Replace 'desired_username' and 'desired_password' with the actual username and password you want to use.
-
             user = User.objects.create_user(username, username, password)
             user.save()
         except IntegrityError as e:
