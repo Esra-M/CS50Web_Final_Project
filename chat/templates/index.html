@@ -14,30 +14,35 @@
                 </div>
             </form>
 
-            <div class="search-results">
+            <div class="search-results" style="display: none;">
 
             </div>
         </div>
-        <div class="contacts">
+
+        <div class="contacts"></div>
+
+        <div class="profile" onclick="openProfileModal('{{ user.username }}')">
+            {% if profile_picture %}
+            <div class="profile-pic" id="userProfilePic">
+                <img src="data:image/png;base64,{{ profile_picture }}" alt="{{ user.username }}">
+            </div>
+            {% else %}
+            <div class="profile-pic" id="userProfilePic">{{ user.username|make_list|first|upper }}</div>
+            {% endif %}
+            <div id="profile-username" class="profile-username">{{ user.username }}</div>
 
         </div>
-
-
-
-        <div class="profile">{{user.username}}</div>
     </div>
-
 
     <div class="chat-container">
         <div class="chat-info">
-            <div class="CurrentUsername">username</div>
-            <div class="call">call</div>
-            <div class="info">info</div>
         </div>
         <div class="chat"></div>
         <form class="message-form" method="post" action="{% url 'send_message' %}">
             {% csrf_token %}
-            <input type="text" class="message" name="message" placeholder="Message...">
+            <input type="text" id="message-input" class="message" name="message" placeholder="Message...">
+            <!-- <emoji-picker></emoji-picker> -->
+
             <input type="hidden" name="receiver" id="receiver" value="">
             <button type="submit" class="send-btn">Send</button>
         </form>
@@ -45,4 +50,40 @@
 
 
 </div>
+
+<div class="modal-overlay" id="profileModal">
+    <div class="modal-content">
+        <div class="profile-header">
+            <span class="close-btn" onclick="closeProfileModal()">&times;</span>
+            <h4>Profile</h4>
+        </div>
+        <div class="profile-content">
+            <div class="profile-pic-container">
+                <div class="profile-pic" id="profilePic"></div>
+                <label for="profilePictureInput" class="btn edit-profile-pic" style="display: none;">
+                    <i class="fa fa-upload"></i>
+                </label>
+                <input id="profilePictureInput" type="file" style="display: none;">
+                <button id="removeProfilePicButton" class="btn remove-profile-pic-button" style="display: none;"><span class="x">&times;</span></button>
+            </div>
+            <span id="profileUsername"></span>
+            <form id="editMenu" class="profile-form" style="display: none;" method="post" action="{% url 'update_profile' %}">
+                {% csrf_token %}
+                <input autofocus type="text" id="newUsernameInput" name="new_username" autocomplete="off" placeholder="Enter new username" style="display: none;">
+                <div id="profileMessage" style="display: none;"></div>
+                <div>
+                    <button type="submit" class="btn edit-profile-button">Save Changes</button>
+                    <a href="{% url 'logout' %}" id="logoutBtnIn" class="btn logout-button" style="display: none;">Logout</a>
+                </div>
+            </form>
+            <div>
+                <button id="editProfileButton" class="btn edit-profile-button" onclick="toggleEditMenu()">Edit Profile</button>
+                <a href="{% url 'logout' %}" id="logoutBtnOut" class="btn logout-button">Logout</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
 {% endblock %}

@@ -11,4 +11,7 @@ urlpatterns = [
     path('fetch_contacts/', views.fetch_contacts, name='fetch_contacts'),
     path('send_message/', views.send_message, name='send_message'),
     path('mark_messages_as_read/<str:contact_username>/', views.mark_messages_as_read, name='mark_messages_as_read'),
+    path('update_profile/', views.update_profile, name='update_profile'),
+    path('remove_profile_picture/', views.remove_profile_picture, name='remove_profile_picture'),
+    path('get_user_name/<int:user_id>/', views.get_user_name, name='get_user_name'),
 ]
