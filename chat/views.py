@@ -200,19 +200,26 @@ def mark_messages_as_read(request, contact_username):
 def fetch_messages(request):
     if request.method == 'GET':
         username = request.GET.get('username')
+        limit = int(request.GET.get('limit')) 
+        offset = int(request.GET.get('offset'))
+
         if username:
             # Get the logged-in user
             logged_in_user = request.user
 
+                        # Calculate the adjusted offset for descending order
+            total_messages_count = Message.objects.filter(
+                (Q(sender=logged_in_user, receiver__username=username) | Q(sender__username=username, receiver=logged_in_user))
+            ).count()
+
             # Fetch messages between the logged-in user and the selected contact, ordered by timestamp
             messages = Message.objects.filter(
                 (Q(sender=logged_in_user, receiver__username=username) | Q(sender__username=username, receiver=logged_in_user))
-            ).order_by('timestamp')
+            ).order_by('timestamp')[max(total_messages_count-(offset+limit),0):total_messages_count]
 
 
             # Serialize messages
             messages_data = [{'content': message.content, 'timestamp': message.timestamp, 'sender': message.sender.username, 'read': message.read} for message in messages]
-
             return JsonResponse({'messages': messages_data})
 
     return JsonResponse({'error': 'Invalid request.'})

@@ -38,10 +38,9 @@
         <div class="chat-info">
         </div>
         <div class="chat"></div>
-        <form class="message-form" method="post" action="{% url 'send_message' %}">
+        <form class="message-form" method="post" action="{% url 'send_message' %}" style="display: none;">
             {% csrf_token %}
-            <input type="text" id="message-input" class="message" name="message" placeholder="Message...">
-            <!-- <emoji-picker></emoji-picker> -->
+            <input autocomplete="off" type="text" id="message-input" class="message" name="message" placeholder="Message...">
 
             <input type="hidden" name="receiver" id="receiver" value="">
             <button type="submit" class="send-btn">Send</button>

@@ -1,22 +1,19 @@
 var currentContactID = null;
+var currentScrollPosition = null;
+var messagesLimit = 30;
+var messagesOffset = 0;
 
-
-
-function loadAndDisplayMessages(username) {
-
+async function loadAndDisplayMessages(username, limit, offset) {
     // Make an AJAX request to fetch messages between the logged-in user and the contact
     $.ajax({
         type: "GET",
         url: "/fetch_messages/",
-        data: { username: username },
+        data: { username: username, limit: limit, offset: offset },
         success: function(data) {
-            // Clear previous messages in the chat container
-            $(".chat").empty();
 
-            // Sort the messages by timestamp
-            data.messages.sort(function(a, b) {
-                return new Date(a.timestamp) - new Date(b.timestamp);
-            });;
+            var prevScrollHeight = $(".chat")[0].scrollHeight;
+
+            $(".chat").empty();
 
             // Append the sorted messages to the chat container
             $.each(data.messages, function(index, message) {
@@ -24,7 +21,6 @@ function loadAndDisplayMessages(username) {
                 var messageContent = $("<p>").text(message.content);
                 var messageStatus = $("<div>").addClass("message-status");
                 var currentUserUsername = $(".profile-username").text();
-
 
                 // Add a CSS class to right-align messages sent by the logged-in user
                 if (message.sender !== username || username === currentUserUsername) {
@@ -42,15 +38,46 @@ function loadAndDisplayMessages(username) {
                 messageWrapper.append(messageContent);
                 messageWrapper.append(messageStatus);
 
+                // Append the message wrapper to the chat container
                 $(".chat").append(messageWrapper);
             });
 
+            var newScrollHeight = $(".chat")[0].scrollHeight;
+            var scrollHeightDifference = newScrollHeight - prevScrollHeight;
+
+            // Restore the previous scroll position if available
+            if (currentScrollPosition !== null) {
+                if (scrollHeightDifference > 0) {
+                    $(".chat").scrollTop($(".chat").scrollTop() + scrollHeightDifference);
+                } else {
+                    $(".chat").scrollTop(currentScrollPosition);
+                }
+            } else {
+                // Scroll to the bottom of the chat container if no previous scroll position
+                var chatContainer = $(".chat");
+                chatContainer.scrollTop(chatContainer[0].scrollHeight);
+            }
         },
         error: function(xhr, status, error) {
             console.error(xhr.responseText);
         }
     });
 }
+
+$(".chat").on("scroll", function() {
+    // Get the current scroll position
+    currentScrollPosition = $(this).scrollTop();
+
+    // Check if the user has scrolled to the top
+    if (currentScrollPosition === 0) {
+        // Load more messages when user scrolls to the top
+        if (currentContactID) {
+            messagesOffset += messagesLimit;
+            var currentContactUsername = $('.contact.selected').data('username');
+            loadAndDisplayMessages(currentContactUsername, messagesLimit, messagesOffset);
+        }
+    }
+});
 
 function fetchUserName(userID) {
     return new Promise((resolve, reject) => {
@@ -93,8 +120,15 @@ $('body').on('click', '.contact', function(event) {
             currentContactID = $(this).data('id');
             var currentContactUsername = await fetchUserName(currentContactID);
             $('#receiver').val(currentContactUsername);
+            $('.message-form').show();
+            $('#message-input').val("");
+            $("#message-input").focus();
+
+            currentScrollPosition = null;
+            messagesOffset = 0;
             markMessagesAsRead(currentContactUsername);
-            loadAndDisplayMessages(currentContactUsername);
+            await loadAndDisplayMessages(currentContactUsername, messagesLimit, messagesOffset);
+
         } catch (error) {
             console.error(error);
         }
@@ -124,7 +158,7 @@ function updateChatInfo() {
             var chatInfo = $('.chat-info');
             chatInfo.empty(); // Clear existing content
             var profilePic = $('<div>').addClass('profile-pic').append(profilePictureSrc ? $('<img>').attr('src', profilePictureSrc) : profilePicInitial); // Append profile picture or initial
-            var usernameElement = $('<span>').addClass('contact-name').text(username);
+            var usernameElement = $('<div>').addClass('contact-name').text(username);
             chatInfo.append(profilePic).append(usernameElement);
         }
 
@@ -179,10 +213,9 @@ function updateContacts() {
 
                 // Display the last message if there are no unread messages
                 if (contact.last_message) {
-                    var lastMessage = $("<span>")
+                    var lastMessage = $("<div>")
                         .addClass("last-message")
                         .text(contact.last_message)
-                        .css('color', 'var(--whitish)');
                     nameLastMessageContainer.append(lastMessage);
                 }
 
@@ -245,7 +278,7 @@ function pollForMessagesAndContacts() {
         (async function() {
             try {
                 var currentContactUsername = await fetchUserName(currentContactID);
-                loadAndDisplayMessages(currentContactUsername);
+                loadAndDisplayMessages(currentContactUsername, messagesLimit, messagesOffset);
             } catch (error) {
                 console.error(error);
                 $(".chat").empty().html("<div class='select-chat'>No chat selected</div>");
@@ -391,7 +424,7 @@ $('.search-form').submit(function(e) {
                         profilePic.append($("<img>").attr("src", "data:image/png;base64," + user.profile_picture).attr("alt", user.username));
                     }
 
-                    var username = $("<span>")
+                    var username = $("<div>")
                         .addClass("contact-name")
                         .text(user.username);
 
