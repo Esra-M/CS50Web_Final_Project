@@ -129,6 +129,21 @@ $('body').on('click', '.contact', function(event) {
             markMessagesAsRead(currentContactUsername);
             await loadAndDisplayMessages(currentContactUsername, messagesLimit, messagesOffset);
 
+            // Check if the screen width is less than 767px
+            if ($(window).width() < 767) {
+                $(".chat").empty();
+
+                $('.chat-container')
+                    .css('position', 'absolute')
+                    .css('left', '100%')
+                    .css('width', '100%')
+                    .css('height', '100%')
+                    .css('display', 'flex')
+                    .animate({ 'left': '0%' }, 300, function() {
+                        $('.messages-container').hide()
+                    })
+            }
+
         } catch (error) {
             console.error(error);
         }
@@ -157,9 +172,34 @@ function updateChatInfo() {
             // Update chat info
             var chatInfo = $('.chat-info');
             chatInfo.empty(); // Clear existing content
+            // Create back arrow
+            var backArrow = $('<span>').addClass('back-arrow').html('<i class="fas fa-arrow-left"></i>').hide(); // Hide by default
+            backArrow.on('click', function() {
+                currentContactID = null;
+                $('.contact').removeClass('selected');
+
+                // Show messages container and hide chat container
+                $('.messages-container').show()
+                $('.chat-container')
+                    .css('position', 'absolute')
+                    .css('left', '0')
+                    .css('width', '100%')
+                    .css('height', '100%')
+                    .animate({ 'left': '100%' }, 300, function() {
+                        // After animation completes, hide the chat container
+                        $(this).hide();
+
+                    })
+            });
+            chatInfo.append(backArrow);
             var profilePic = $('<div>').addClass('profile-pic').append(profilePictureSrc ? $('<img>').attr('src', profilePictureSrc) : profilePicInitial); // Append profile picture or initial
             var usernameElement = $('<div>').addClass('contact-name').text(username);
             chatInfo.append(profilePic).append(usernameElement);
+
+            // Show back button if screen is small
+            if ($(window).width() < 767) {
+                backArrow.show();
+            }
         }
 
     }
@@ -179,9 +219,11 @@ function updateContacts() {
             $(".contacts").empty();
 
             // Check if there are no contacts
-            if (data.contacts.length === 0) {
-                $(".contacts").append("<div class='no-contacts'>No contacts</div>");
-                return; // Exit the function if there are no contacts
+            if (data.contacts) {
+                if (data.contacts.length === 0) {
+                    $(".contacts").append("<div class='no-contacts'>No contacts</div>");
+                    return;
+                }
             }
 
             // Sort contacts based on the last_message timestamp
