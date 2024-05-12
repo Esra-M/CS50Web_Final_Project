@@ -12,7 +12,7 @@ from PIL import Image
 from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import sys
-
+from cryptography.fernet import Fernet
 
 
 from .models import Message, Profile
@@ -152,7 +152,7 @@ def fetch_contacts(request):
             contact_dict = {
                 'id': other_user_id,
                 'username': other_user.username,
-                'last_message': latest_message_content if latest_message_content else None,
+                'last_message': decrypt_message(latest_message_content) if latest_message_content else None,
                 'has_unread_messages': has_unread_messages,  # Add a flag for unread messages
             }
 
@@ -196,6 +196,23 @@ def mark_messages_as_read(request, contact_username):
 
     return JsonResponse({'error': 'Invalid request method.'})
 
+
+# Generate a key for encryption and decryption
+key = Fernet.generate_key()
+cipher_suite = Fernet(key)
+
+
+def encrypt_message(message):
+    # Encrypt the message
+    cipher_text = cipher_suite.encrypt(message.encode())
+    return base64.b64encode(cipher_text).decode()
+
+
+def decrypt_message(encrypted_message):
+    # Decrypt the message
+    decrypted_text = cipher_suite.decrypt(base64.b64decode(encrypted_message)).decode()
+    return decrypted_text
+
 @login_required
 def fetch_messages(request):
     if request.method == 'GET':
@@ -219,7 +236,7 @@ def fetch_messages(request):
 
 
             # Serialize messages
-            messages_data = [{'content': message.content, 'timestamp': message.timestamp, 'sender': message.sender.username, 'read': message.read} for message in messages]
+            messages_data = [{'content': decrypt_message(message.content), 'timestamp': message.timestamp, 'sender': message.sender.username, 'read': message.read} for message in messages]
             return JsonResponse({'messages': messages_data})
 
     return JsonResponse({'error': 'Invalid request.'})
@@ -234,12 +251,13 @@ def send_message(request):
         receiver_user = User.objects.get(username=receiver_username)
 
         # Create and save the message with sender and receiver
-        message = Message(sender=sender_user, receiver=receiver_user, content=message_content)
+        message = Message(sender=sender_user, receiver=receiver_user, content=encrypt_message(message_content))
         message.save()
 
         # Serialize the message data including the timestamp
         message_data = {
-            "content": message.content,
+            "content": encrypt_message(message_content),
+            "decrypted_content": message_content,
             "timestamp": message.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
         }
 

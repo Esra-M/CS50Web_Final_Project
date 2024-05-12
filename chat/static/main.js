@@ -326,7 +326,7 @@ function markMessagesAsRead(currentContactUsername) {
 /// Function to append a new message to the chat container
 function appendNewMessage(message) {
     var messageWrapper = $("<div>").addClass("message-wrapper");
-    var messageContent = $("<p>").text(message.content).addClass("sent-message");
+    var messageContent = $("<p>").text(message.decrypted_content).addClass("sent-message");
 
     // Add message status icon based on the 'read' flag
     var messageStatus = $("<div>").addClass("message-status");
