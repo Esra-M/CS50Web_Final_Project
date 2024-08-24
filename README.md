@@ -1,5 +1,7 @@
 # Real-Time Chat Application
 
+## Website: https://esram.pythonanywhere.com/
+
 ## Overview
 
 This project is a real-time chat application developed with Django on the back end and JavaScript on the front end. The application offers registration and login of users; a search functionality for other users; messaging in real time; dynamic changing of the username and profile picture; and message encryption to provide security and privacy among the users.
