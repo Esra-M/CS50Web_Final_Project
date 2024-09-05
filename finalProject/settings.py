@@ -126,3 +126,6 @@ from django.contrib.auth.decorators import login_required
 
 LOGIN_URL = '/login'
 LOGIN_REDIRECT_URL = '/'
+
+import os
+FERNET_KEY = os.getenv('FERNET_KEY', b'y1c7dufjDLpGWjqVv3wAkRgPoiZCP6cOwwIyD5PF4f0=')

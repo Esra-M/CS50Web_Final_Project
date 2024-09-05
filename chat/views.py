@@ -13,6 +13,8 @@ from io import BytesIO
 from django.core.files.uploadedfile import InMemoryUploadedFile
 import sys
 from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet
+from django.conf import settings
 
 
 from .models import Message, Profile
@@ -196,22 +198,31 @@ def mark_messages_as_read(request, contact_username):
 
     return JsonResponse({'error': 'Invalid request method.'})
 
+# Load the encryption key from settings
+fernet = Fernet(settings.FERNET_KEY)
 
-# Generate a key for encryption and decryption
-key = Fernet.generate_key()
-cipher_suite = Fernet(key)
+# Encrypt the message
+def encrypt_message(message_content):
+    try:
+        message_bytes = message_content.encode('utf-8')
+        encrypted_message = fernet.encrypt(message_bytes)
+        return encrypted_message.decode('utf-8')  # Return as a string
+    except Exception as e:
+        print(f"Encryption error: {e}")
+        return None
 
-
-def encrypt_message(message):
-    # Encrypt the message
-    cipher_text = cipher_suite.encrypt(message.encode())
-    return base64.b64encode(cipher_text).decode()
-
-
+# Decrypt the message 
 def decrypt_message(encrypted_message):
-    # Decrypt the message
-    decrypted_text = cipher_suite.decrypt(base64.b64decode(encrypted_message)).decode()
-    return decrypted_text
+    try:
+        encrypted_bytes = encrypted_message.encode('utf-8')
+        decrypted_message = fernet.decrypt(encrypted_bytes)
+        return decrypted_message.decode('utf-8')
+    except Exception as e:
+        print(f"Decryption error: {e}")
+        return None
+
+
+
 
 @login_required
 def fetch_messages(request):
@@ -224,7 +235,7 @@ def fetch_messages(request):
             # Get the logged-in user
             logged_in_user = request.user
 
-                        # Calculate the adjusted offset for descending order
+            # Calculate the adjusted offset for descending order
             total_messages_count = Message.objects.filter(
                 (Q(sender=logged_in_user, receiver__username=username) | Q(sender__username=username, receiver=logged_in_user))
             ).count()
